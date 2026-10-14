@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 186" width="200" height="186" role="img" aria-label="Apostle">
+  <title>Apostle</title>
+  <!-- les deux couvertures de la Bible, posées en V inversé comme un toit -->
+  <path fill="#6B4A2E" d="M97 22 L18 130 L18 147 L97 41 Z"/>
+  <path fill="#6B4A2E" d="M103 22 L182 130 L182 147 L103 41 Z"/>
+  <!-- le bloc de pages, qui s'évase vers l'extérieur -->
+  <path fill="#A9CFE6" d="M97 41 L18 147 L18 170 L97 54 Z"/>
+  <path fill="#A9CFE6" d="M103 41 L182 147 L182 170 L103 54 Z"/>
+  <!-- celui qui s'abrite dessous : assis de profil, les genoux ramenés -->
+  <circle fill="#35648A" cx="88" cy="103" r="11"/>
+  <g fill="none" stroke="#35648A" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke-width="19" d="M91 126 L96 150"/>
+    <path stroke-width="17" d="M99 157 L121 150"/>
+    <path stroke-width="12" d="M124 152 L127 165"/>
+    <path stroke-width="8"  d="M100 134 L118 148"/>
+  </g>
+</svg>

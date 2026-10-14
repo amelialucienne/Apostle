@@ -1,0 +1,55 @@
+
+
+/* ---------- outils de démonstration ---------- */
+.outils-micro{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;position:relative;z-index:2}
+.btn-clair{
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:var(--blanc);
+  border-radius:30px;padding:8px 18px;font-size:13px;cursor:pointer;transition:background .2s;
+}
+.btn-clair:hover{background:rgba(255,255,255,.3)}
+.btn-clair[disabled]{opacity:.5;cursor:default}
+#resultat-test .ligne-test{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.14)}
+#resultat-test .ligne-test:last-of-type{border-bottom:0}
+#resultat-test .v{font-weight:bold;text-align:right}
+#resultat-test .verdict{margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.25)}
+
+/* ---------- propositions de rattrapage ---------- */
+.propositions{
+  position:fixed;left:236px;right:0;bottom:71px;z-index:41;
+  background:var(--marron-pale);border-top:1px solid var(--marron-clair);
+  padding:9px clamp(18px,3vw,40px);display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+}
+.propositions .lab{font-size:12.5px;color:var(--marron);font-weight:bold}
+.propositions button{
+  font:inherit;font-size:13px;background:var(--blanc);border:1px solid var(--marron-clair);
+  color:var(--marron-fonce);border-radius:20px;padding:6px 15px;cursor:pointer;transition:background .15s;
+}
+.propositions button:hover{background:var(--marron);color:var(--blanc)}
+@media(max-width:900px){.propositions{left:0}}
+
+/* ---------- journal d'écoute ---------- */
+.journal li{font-size:13px;align-items:flex-start}
+.journal .dit{font-family:var(--police);color:var(--encre)}
+.journal .res{font-size:11.5px;border-radius:20px;padding:2px 9px;white-space:nowrap;flex:none}
+.journal .res.oui{background:#E3F3EC;color:#1E7A5A}
+.journal .res.non{background:var(--brume);color:var(--gris)}
+
+/* ---------- fiche Strong, à l'écran et en projection ---------- */
+.s-orig{line-height:1.15;margin-bottom:.25em}
+.s-tr{opacity:.72;font-style:italic;margin-bottom:.7em}
+.s-sens{line-height:1.4;opacity:.92;max-width:26ch;margin:0 auto}
+
+.famille{display:flex;gap:9px;flex-wrap:wrap;margin-top:8px}
+.mot-origine{
+  font:inherit;background:var(--blanc);border:1px solid var(--ligne);border-radius:12px;
+  padding:10px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:1px;
+  transition:border-color .15s,background .15s;
+}
+.mot-origine:hover{border-color:var(--marron);background:var(--marron-pale)}
+.mot-origine.actif{border-color:var(--marron);background:var(--marron-pale)}
+.mot-origine b{font-size:19px;color:var(--marron);font-weight:normal}
+.mot-origine span{font-size:12.5px;color:var(--gris);font-style:italic}
+.mot-origine em{font-size:10.5px;color:var(--bleu);font-style:normal;letter-spacing:.08em}
+
+.occ-versets li{align-items:flex-start}
+.occ-versets .apercu{display:block;font-size:12.5px;color:var(--gris);margin-top:2px;line-height:1.4}

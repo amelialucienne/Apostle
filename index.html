@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apostle</title>
+<meta name="description" content="Apostle, projection biblique pilotée à la voix pour les cultes.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+
+<style>
+/* Apostle — feuille de style principale
+   Palette : blanc, bleu clair, marron. Police : Arial. */
+
+:root{
+  --blanc:#FFFFFF;
+  --brume:#F4F8FB;
+  --bleu-pale:#E3EFF7;
+  --bleu-clair:#B9D7EA;
+  --bleu:#5C93B8;
+  --bleu-fonce:#2F5A78;
+  --marron-pale:#F3EAE1;
+  --marron-clair:#B99476;
+  --marron:#7A5236;
+  --marron-fonce:#4A3020;
+  --encre:#22303A;
+  --gris:#6C7B87;
+  --ligne:#DCE7EF;
+  --ombre:0 1px 2px rgba(34,48,58,.05), 0 12px 30px -18px rgba(47,90,120,.35);
+  --ombre-forte:0 20px 60px -24px rgba(47,90,120,.5);
+  --police:Arial, Helvetica, "Liberation Sans", sans-serif;
+  --r:14px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--brume);color:var(--encre);
+  font-family:var(--police);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+button{font-family:var(--police)}
+:focus-visible{outline:2px solid var(--bleu);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--bleu-clair);border-radius:10px;border:3px solid var(--brume)}
+
+/* ---------- coquille de l'application ---------- */
+#app{display:grid;grid-template-columns:236px 1fr;height:100vh}
+
+.rail{
+  background:var(--blanc);border-right:1px solid var(--ligne);
+  display:flex;flex-direction:column;padding:20px 14px;gap:4px;position:relative;overflow:hidden;
+}
+.rail-marque{display:flex;align-items:center;gap:11px;padding:4px 8px 22px}
+.rail-marque .marque{height:36px;width:auto;flex:none}
+.rail-marque b{font-size:21px;letter-spacing:.19em;font-weight:400;color:var(--marron);margin-left:-1px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;
+  background:none;border:0;width:100%;text-align:left;cursor:pointer;color:var(--gris);
+  font-size:14.5px;transition:background .2s,color .2s;
+}
+.nav-item svg{width:19px;height:19px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.nav-item:hover{background:var(--bleu-pale);color:var(--bleu-fonce)}
+.nav-item.actif{background:var(--marron);color:var(--blanc);box-shadow:0 10px 22px -14px rgba(122,82,54,.9)}
+.rail-bas{margin-top:auto;padding:14px 12px 4px;border-top:1px solid var(--ligne)}
+.rail-bas .eglise{font-size:13.5px;font-weight:bold;color:var(--encre)}
+.rail-bas .plan{font-size:12px;color:var(--gris)}
+
+.zone{position:relative;overflow-y:auto;overflow-x:hidden;padding:0 0 118px}
+.vue{display:none;padding:28px clamp(18px,3vw,40px) 10px;animation:entre .5s ease}
+.vue.actif{display:block}
+@keyframes entre{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.titre-vue{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+.titre-vue h1{font-size:28px;font-weight:bold;letter-spacing:-.01em;margin:0}
+.titre-vue p{margin:3px 0 0;color:var(--gris);font-size:14px}
+
+/* ---------- cartes ---------- */
+.carte{background:var(--blanc);border:1px solid var(--ligne);border-radius:var(--r);padding:18px 20px;box-shadow:var(--ombre)}
+.grille{display:grid;gap:16px}
+.g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.etiq{font-size:11.5px;letter-spacing:.14em;color:var(--bleu);margin-bottom:7px}
+.chiffre{font-size:32px;font-weight:bold;letter-spacing:-.02em;color:var(--encre)}
+.sous{font-size:12.5px;color:var(--gris)}
+
+/* ---------- carte d'écoute ---------- */
+.ecoute{
+  position:relative;overflow:hidden;border-radius:18px;padding:26px 28px;color:var(--blanc);
+  background:linear-gradient(125deg,#2F5A78 0%,#4C82A8 48%,#7A5236 128%);
+  box-shadow:var(--ombre-forte);
+}
+.ecoute .halo{position:absolute;border-radius:50%;filter:blur(52px);pointer-events:none}
+.ecoute h2{margin:0;font-size:21px;font-weight:bold}
+.ecoute p{margin:6px 0 0;font-size:14px;color:rgba(255,255,255,.82);max-width:52ch}
+.ecoute .ligne{display:flex;align-items:center;gap:16px;margin-top:20px;flex-wrap:wrap;position:relative;z-index:2}
+.mot{
+  display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);
+  border-radius:30px;padding:7px 18px;font-size:14px;letter-spacing:.04em;
+}
+.mot b{font-weight:bold}
+
+/* bouton micro */
+.micro{
+  position:relative;width:76px;height:76px;border-radius:50%;border:0;cursor:pointer;flex:none;
+  background:var(--blanc);color:var(--marron);display:grid;place-items:center;
+  box-shadow:0 14px 30px -12px rgba(0,0,0,.45);transition:transform .2s;
+}
+.micro:hover{transform:scale(1.05)}
+.micro svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.micro.on{background:#C0392B;color:var(--blanc)}
+.micro.on.veille{background:#6C7B87}
+.micro.on.veille .anneau{animation:none}
+.micro .anneau{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.7);opacity:0}
+.micro.on .anneau{animation:onde 1.9s ease-out infinite}
+.micro.on .anneau:nth-child(2){animation-delay:.65s}
+@keyframes onde{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.85);opacity:0}}
+
+/* visualiseur */
+.vu{display:flex;align-items:flex-end;gap:3px;height:34px}
+.vu i{width:3px;background:rgba(255,255,255,.55);border-radius:2px;height:4px;display:block;transition:height .12s ease}
+.vu.on i{animation:bat 1s ease-in-out infinite}
+.vu.mesure i{animation:none;transition:height .09s linear,background .2s}
+@keyframes bat{0%,100%{height:5px}50%{height:30px}}
+
+/* ---------- barre de commande ---------- */
+.barre{
+  position:fixed;left:236px;right:0;bottom:0;z-index:40;
+  background:rgba(255,255,255,.93);backdrop-filter:blur(12px);
+  border-top:1px solid var(--ligne);padding:12px clamp(18px,3vw,40px);
+  display:flex;align-items:center;gap:14px;
+}
+.micro-mini{
+  width:46px;height:46px;border-radius:50%;border:0;cursor:pointer;flex:none;position:relative;
+  background:var(--marron);color:var(--blanc);display:grid;place-items:center;transition:background .2s,transform .2s;
+}
+.micro-mini:hover{transform:scale(1.06)}
+.micro-mini.on{background:#C0392B}
+.micro-mini svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.champ{
+  flex:1;min-width:0;display:flex;align-items:center;gap:10px;
+  background:var(--blanc);border:1px solid var(--ligne);border-radius:30px;padding:9px 18px;
+}
+.champ input{flex:1;min-width:0;border:0;outline:0;font-size:15px;font-family:var(--police);color:var(--encre);background:none}
+.champ .prefixe{color:var(--marron);font-weight:bold;white-space:nowrap;font-size:14px}
+.envoyer{
+  border:0;border-radius:30px;background:var(--bleu-fonce);color:var(--blanc);
+  padding:11px 22px;font-size:14px;cursor:pointer;transition:background .2s;white-space:nowrap;
+}
+.envoyer:hover{background:var(--encre)}
+.retour{font-size:13px;color:var(--gris);min-height:19px;padding-left:2px}
+.retour.err{color:#B03A2E}
+.retour.ok{color:#1E7A5A}
+
+/* suggestions */
+.puces{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.puce{
+  background:var(--bleu-pale);border:1px solid var(--bleu-clair);color:var(--bleu-fonce);
+  border-radius:20px;padding:6px 14px;font-size:12.5px;cursor:pointer;transition:background .2s,transform .2s;
+}
+.puce:hover{background:var(--bleu-clair);transform:translateY(-1px)}
+
+/* ---------- scène de projection ---------- */
+.scene-enveloppe{position:relative;border-radius:16px;overflow:hidden;box-shadow:var(--ombre-forte);border:1px solid var(--ligne)}
+.scene{
+  aspect-ratio:16/9;position:relative;overflow:hidden;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:6% 9%;
+  transition:background 1.1s ease,color 1.1s ease;
+}
+.scene .nuee{position:absolute;border-radius:50%;filter:blur(64px);animation:derive 30s ease-in-out infinite alternate;pointer-events:none}
+.scene .rayon-p{position:absolute;top:-40%;width:2px;height:160%;transform-origin:top center;pointer-events:none;animation:respire 12s ease-in-out infinite}
+.scene .filigrane{position:absolute;right:4.5%;bottom:6%;height:8.5%;width:auto;opacity:.11;pointer-events:none}
+.verset{position:relative;z-index:3;line-height:1.38;max-width:min(32ch,94%);text-wrap:balance;overflow:hidden}
+.verset .num{font-size:.5em;vertical-align:.6em;opacity:.5;margin-right:.25em}
+.reference{position:relative;z-index:3;margin-top:4.5%;letter-spacing:.2em;opacity:.72}
+.scene.noire .verset,.scene.noire .reference,.scene.noire .filigrane{opacity:0;transition:opacity .35s}
+.apparait{animation:versetEntre .65s cubic-bezier(.2,.8,.3,1)}
+@keyframes versetEntre{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.regie{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:14px}
+.cmd{
+  background:var(--blanc);border:1px solid var(--ligne);color:var(--encre);
+  border-radius:10px;padding:9px 15px;font-size:13.5px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  transition:border-color .2s,background .2s,transform .2s;
+}
+.cmd:hover{border-color:var(--bleu);background:var(--bleu-pale);transform:translateY(-1px)}
+.cmd.rouge{background:var(--marron);border-color:var(--marron);color:var(--blanc)}
+.cmd.rouge:hover{background:var(--marron-fonce);border-color:var(--marron-fonce)}
+.cmd svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cmd kbd{font:inherit;font-size:11px;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 5px;color:var(--gris)}
+
+.themes{display:flex;gap:9px;flex-wrap:wrap}
+.pastille{
+  border:2px solid transparent;border-radius:12px;padding:5px;cursor:pointer;background:none;
+  display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .2s;
+}
+.pastille i{width:58px;height:34px;border-radius:7px;display:block;border:1px solid rgba(34,48,58,.12)}
+.pastille span{font-size:11.5px;color:var(--gris)}
+.pastille[aria-pressed="true"]{border-color:var(--marron)}
+.pastille[aria-pressed="true"] span{color:var(--marron);font-weight:bold}
+
+.curseur{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--gris)}
+.curseur input[type=range]{accent-color:var(--marron);width:150px}
+
+/* ---------- listes ---------- */
+.liste{list-style:none;margin:0;padding:0}
+.liste li{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:11px 4px;border-bottom:1px solid var(--ligne);font-size:14px;
+}
+.liste li:last-child{border-bottom:0}
+.liste b{font-weight:bold}
+.liste .heure{color:var(--gris);font-size:12.5px;white-space:nowrap}
+.liste button{background:none;border:0;color:var(--bleu-fonce);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:7px}
+.liste button:hover{background:var(--bleu-pale)}
+
+/* versions */
+.version{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  border:1px solid var(--ligne);border-radius:12px;padding:14px 16px;background:var(--blanc);transition:border-color .2s;
+}
+.version:hover{border-color:var(--bleu-clair)}
+.version.active{border-color:var(--marron);background:var(--marron-pale)}
+.version .n{font-weight:bold;font-size:15px}
+.version .d{font-size:12.5px;color:var(--gris)}
+.badge{font-size:11px;border-radius:20px;padding:3px 10px;white-space:nowrap}
+.b-libre{background:#E3F3EC;color:#1E7A5A}
+.b-licence{background:var(--marron-pale);color:var(--marron)}
+.b-actif{background:var(--marron);color:var(--blanc)}
+
+/* strong */
+.strong-tete{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.strong-code{font-size:13px;letter-spacing:.14em;color:var(--bleu);border:1px solid var(--bleu-clair);border-radius:20px;padding:3px 12px}
+.strong-orig{font-size:38px;color:var(--marron);line-height:1.1}
+.strong-tr{font-size:17px;color:var(--gris);font-style:italic}
+.def{display:grid;grid-template-columns:130px 1fr;gap:10px 16px;margin-top:16px;font-size:14px}
+.def dt{color:var(--bleu);font-size:12px;letter-spacing:.1em;padding-top:2px}
+.def dd{margin:0}
+.occ{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px}
+.occ button{background:var(--bleu-pale);border:0;border-radius:8px;padding:5px 11px;font-size:12.5px;color:var(--bleu-fonce);cursor:pointer}
+.occ button:hover{background:var(--bleu-clair)}
+
+/* réglages */
+.reglage{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--ligne)}
+.reglage:last-child{border-bottom:0}
+.reglage .t{font-size:14.5px;font-weight:bold}
+.reglage .s{font-size:12.5px;color:var(--gris);max-width:52ch}
+.interrupteur{width:50px;height:28px;border-radius:20px;border:0;background:var(--ligne);position:relative;cursor:pointer;flex:none;transition:background .25s}
+.interrupteur::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--blanc);transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.interrupteur[aria-pressed="true"]{background:var(--marron)}
+.interrupteur[aria-pressed="true"]::after{transform:translateX(22px)}
+select,input[type=text].reg{
+  font-family:var(--police);font-size:14px;padding:9px 13px;border:1px solid var(--ligne);
+  border-radius:10px;background:var(--blanc);color:var(--encre);
+}
+
+.avis{background:var(--bleu-pale);border-left:3px solid var(--bleu);border-radius:0 10px 10px 0;padding:13px 17px;font-size:13.5px;color:var(--bleu-fonce)}
+.avis b{display:block;margin-bottom:3px}
+
+/* plein écran */
+.scene-enveloppe:fullscreen{border-radius:0;border:0}
+.scene-enveloppe:fullscreen .scene{aspect-ratio:auto;height:100vh}
+.scene-enveloppe:fullscreen .verset{max-width:min(36ch,90%)}
+
+@media(max-width:900px){
+  #app{grid-template-columns:1fr}
+  .rail{flex-direction:row;align-items:center;overflow-x:auto;padding:10px;border-right:0;border-bottom:1px solid var(--ligne)}
+  .rail-marque{padding:0 14px 0 6px}
+  .rail-marque b{display:none}
+  .nav-item{width:auto;white-space:nowrap}
+  .rail-bas{display:none}
+  .barre{left:0;flex-wrap:wrap}
+  .champ{order:3;width:100%;flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ---------- navigateur biblique ---------- */
+.fil{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--gris);margin-bottom:12px;flex-wrap:wrap}
+.fil button{background:none;border:0;color:var(--bleu-fonce);cursor:pointer;font:inherit;padding:4px 9px;border-radius:8px}
+.fil button:hover{background:var(--bleu-pale)}
+.fil .ici{color:var(--encre);font-weight:bold}
+.nav-bible{display:grid;gap:6px;max-height:430px;overflow-y:auto;padding-right:4px}
+.nav-bible.livres{grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}
+.nav-bible.chapitres{grid-template-columns:repeat(auto-fill,minmax(46px,1fr))}
+.nav-bible button{
+  font:inherit;font-size:13.5px;padding:9px 11px;border:1px solid var(--ligne);
+  background:var(--blanc);border-radius:9px;cursor:pointer;color:var(--encre);text-align:left;
+  transition:border-color .15s,background .15s;display:flex;justify-content:space-between;gap:6px;
+}
+.nav-bible.chapitres button{text-align:center;justify-content:center;font-variant-numeric:tabular-nums;padding:9px 4px}
+.nav-bible button:hover{border-color:var(--marron);background:var(--marron-pale)}
+.nav-bible button em{font-style:normal;color:var(--gris);font-size:11.5px}
+.nav-bible .titre-groupe{grid-column:1/-1;font-size:11px;letter-spacing:.12em;color:var(--bleu);margin:10px 0 2px}
+.nav-bible .titre-groupe:first-child{margin-top:0}
+
+/* ---------- diagnostic du micro ---------- */
+.diag{
+  margin-top:16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);
+  border-radius:11px;padding:12px 15px;font-size:12.8px;line-height:1.5;position:relative;z-index:2;
+}
+.diag b{display:block;margin-bottom:5px;font-size:13px}
+.diag ul{margin:0;padding-left:17px}
+.diag li{margin:3px 0;color:rgba(255,255,255,.88)}
+.diag.ok{background:rgba(92,174,139,.2);border-color:rgba(92,174,139,.45)}
+
+</style>
+
+<!-- ============ application ============ -->
+<div id="app">
+
+  <nav class="rail">
+    <div class="rail-marque">
+      <svg class="marque" viewBox="0 0 200 186" aria-hidden="true">
+        <path fill="#6B4A2E" d="M97 22 L18 130 L18 147 L97 41 Z"/>
+        <path fill="#6B4A2E" d="M103 22 L182 130 L182 147 L103 41 Z"/>
+        <path fill="#A9CFE6" d="M97 41 L18 147 L18 170 L97 54 Z"/>
+        <path fill="#A9CFE6" d="M103 41 L182 147 L182 170 L103 54 Z"/>
+        <circle fill="#35648A" cx="88" cy="103" r="11"/>
+        <g fill="none" stroke="#35648A" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke-width="19" d="M91 126 L96 150"/>
+          <path stroke-width="17" d="M99 157 L121 150"/>
+          <path stroke-width="12" d="M124 152 L127 165"/>
+          <path stroke-width="8" d="M100 134 L118 148"/>
+        </g>
+      </svg>
+      <b>APOSTLE</b>
+    </div>
+
+    <button class="nav-item actif" data-vue="accueil">
+      <svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>
+      <span>Accueil</span>
+    </button>
+    <button class="nav-item" data-vue="projection">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      <span>Projection</span>
+    </button>
+    <button class="nav-item" data-vue="bible">
+      <svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M9 7h7M9 11h7"/></svg>
+      <span>Bible et versions</span>
+    </button>
+    <button class="nav-item" data-vue="strong">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>
+      <span>Strong et étude</span>
+    </button>
+    <button class="nav-item" data-vue="reglages">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+      <span>Réglages</span>
+    </button>
+
+    <div class="rail-bas">
+      <div class="eglise">Église de démonstration</div>
+      <div class="plan">session du dimanche, 09:42</div>
+    </div>
+  </nav>
+
+  <div class="zone">
+
+    <!-- ---------- accueil ---------- -->
+    <section class="vue actif" id="vue-accueil">
+      <div class="titre-vue">
+        <div>
+          <h1>Bonjour</h1>
+          <p>Tout est prêt. Dites la référence, le passage s'affiche.</p>
+        </div>
+        <button class="cmd rouge" data-vue="projection">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          Ouvrir la projection
+        </button>
+      </div>
+
+      <div class="ecoute">
+        <div class="halo" style="width:340px;height:340px;left:-60px;top:-140px;background:rgba(185,215,234,.45)"></div>
+        <div class="halo" style="width:280px;height:280px;right:-40px;bottom:-160px;background:rgba(185,148,118,.4)"></div>
+        <div style="position:relative;z-index:2">
+          <h2>À l'écoute du prédicateur</h2>
+          <p>Dites simplement la référence, rien d'autre. Le passage s'affiche sans attendre la fin de la phrase. Ensuite, « verset 4 » suffit pour avancer dans le même chapitre.</p>
+          <div class="ligne">
+            <button class="micro" id="micro-grand" aria-label="Activer le micro">
+              <span class="anneau"></span><span class="anneau"></span>
+              <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3M9 21h6"/></svg>
+            </button>
+            <div>
+              <div class="mot">« <b>Romains 2 verset 3</b> »&nbsp;&nbsp;puis&nbsp;&nbsp;« <b>verset 4</b> »</div>
+              <div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:8px" id="etat-micro">micro en attente, cliquez pour activer</div>
+            </div>
+            <div class="vu" id="vu">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <div class="outils-micro">
+            <button class="btn-clair" id="btn-test">Tester le micro</button>
+            <button class="btn-clair" id="btn-demo">Démonstration guidée</button>
+          </div>
+          <div class="diag" id="diagnostic"></div>
+          <div class="diag" id="resultat-test" hidden></div>
+        </div>
+      </div>
+
+      <div class="grille g3" style="margin-top:18px">
+        <div class="carte"><div class="etiq">commandes reconnues</div><div class="chiffre" id="st-cmd">12</div><div class="sous">depuis le début de la session</div></div>
+        <div class="carte"><div class="etiq">latence moyenne</div><div class="chiffre" id="st-lat">0,58 s</div><div class="sous">de la fin de la phrase à l'écran</div></div>
+        <div class="carte"><div class="etiq">abandons volontaires</div><div class="chiffre" id="st-ab">3</div><div class="sous">phrases sans référence, rien projeté</div></div>
+      </div>
+
+      <div class="grille g2" style="margin-top:18px">
+        <div class="carte">
+          <div class="etiq">essayez une commande</div>
+          <p class="sous" style="margin-top:0">Cliquez, ou dictez-la au micro. Le clavier et la voix passent par le même analyseur.</p>
+          <div class="puces" id="puces"></div>
+        </div>
+        <div class="carte">
+          <div class="etiq">historique de la session</div>
+          <ul class="liste" id="historique"></ul>
+        </div>
+      </div>
+
+      <div class="grille" style="margin-top:18px">
+        <div class="carte">
+          <div class="etiq">journal d'écoute</div>
+          <p class="sous" style="margin-top:0">Ce que la reconnaissance a entendu, mot pour mot, et ce que l'analyseur en a fait. C'est ici qu'on voit pourquoi une commande ne passe pas.</p>
+          <ul class="liste journal" id="journal"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- projection ---------- -->
+    <section class="vue" id="vue-projection">
+      <div class="titre-vue">
+        <div>
+          <h1>Projection</h1>
+          <p>Ce que voit l'assemblée. Le plein écran envoie cette scène sur le vidéoprojecteur.</p>
+        </div>
+        <div class="regie" style="margin:0">
+          <button class="cmd" id="btn-plein">
+            <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            Plein écran
+          </button>
+          <button class="cmd rouge" id="btn-noir">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+            Écran noir <kbd>B</kbd>
+          </button>
+        </div>
+      </div>
+
+      <div class="scene-enveloppe" id="enveloppe">
+        <div class="scene" id="scene">
+          <div class="nuee" id="nuee1"></div>
+          <div class="nuee" id="nuee2"></div>
+          <div class="rayon-p" id="rayon1" style="left:18%;transform:rotate(-10deg)"></div>
+          <div class="rayon-p" id="rayon2" style="left:64%;transform:rotate(8deg);animation-delay:-5s"></div>
+          <svg class="filigrane" viewBox="0 0 200 186" aria-hidden="true">
+            <g fill="currentColor">
+              <path d="M97 22 L18 130 L18 147 L97 41 Z"/>
+              <path d="M103 22 L182 130 L182 147 L103 41 Z"/>
+              <path d="M97 41 L18 147 L18 170 L97 54 Z" opacity=".55"/>
+              <path d="M103 41 L182 147 L182 170 L103 54 Z" opacity=".55"/>
+              <circle cx="88" cy="103" r="11"/>
+            </g>
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke-width="19" d="M91 126 L96 150"/>
+              <path stroke-width="17" d="M99 157 L121 150"/>
+              <path stroke-width="12" d="M124 152 L127 165"/>
+              <path stroke-width="8" d="M100 134 L118 148"/>
+            </g>
+          </svg>
+          <div class="verset" id="verset"></div>
+          <div class="reference" id="reference"></div>
+        </div>
+      </div>
+
+      <div class="regie">
+        <button class="cmd" id="btn-prec"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Page précédente <kbd>←</kbd></button>
+        <span class="sous" id="pagination">page 1 sur 1</span>
+        <button class="cmd" id="btn-suiv">Page suivante <kbd>→</kbd> <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+
+      <div class="grille g2" style="margin-top:18px">
+        <div class="carte">
+          <div class="etiq">thème de projection</div>
+          <div class="themes" id="themes"></div>
+        </div>
+        <div class="carte">
+          <div class="etiq">réglages d'écran</div>
+          <div class="curseur" style="margin-top:10px">
+            <span>Taille du texte</span>
+            <input type="range" id="taille" min="3" max="9" step="0.5" value="5.5">
+            <span id="taille-val">5,5 %</span>
+          </div>
+          <div class="curseur" style="margin-top:14px">
+            <span>Version</span>
+            <select id="select-version"></select>
+          </div>
+          <p class="sous" style="margin-top:14px" id="mention-droits"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- bible ---------- -->
+    <section class="vue" id="vue-bible">
+      <div class="titre-vue">
+        <div>
+          <h1>Bible et versions</h1>
+          <p>Les traductions du domaine public sont embarquées et fonctionnent hors ligne. Les autres demandent une licence.</p>
+        </div>
+      </div>
+
+      <div class="grille g2">
+        <div>
+          <div class="etiq">traductions</div>
+          <div class="grille" id="versions" style="gap:10px"></div>
+        </div>
+        <div>
+          <div class="etiq">parcourir la Bible</div>
+          <div class="carte">
+            <div id="fil" class="fil"></div>
+            <div id="navigateur" class="nav-bible"></div>
+          </div>
+          <div class="avis" style="margin-top:14px">
+            <b>Bible complète, hors ligne</b>
+            Louis Segond 1910 et King James Version sont embarquées en entier, 66 livres et
+            plus de 31 000 versets chacune. Aucune connexion n'est nécessaire pour les projeter.
+            Les deux sont dans le domaine public, aucune autorisation n'est requise.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- strong ---------- -->
+    <section class="vue" id="vue-strong">
+      <div class="titre-vue">
+        <div>
+          <h1>Strong et étude</h1>
+          <p>Dites « le strong du mot servir ». Tous les mots d'origine derrière le mot français s'affichent, avec les versets où la racine apparaît.</p>
+        </div>
+      </div>
+      <div class="grille g2">
+        <div class="carte" id="strong-fiche"></div>
+        <div>
+          <div class="etiq">entrées disponibles</div>
+          <div class="carte"><ul class="liste" id="strong-liste"></ul></div>
+          <div class="avis" style="margin-top:14px">
+            <b>Sources</b>
+            Dictionnaire Strong de 1890, domaine public. Les données morphologiques hébraïques et grecques proviennent en production du jeu STEPBible, publié sous licence CC BY 4.0, dont l'attribution doit rester visible.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- réglages ---------- -->
+    <section class="vue" id="vue-reglages">
+      <div class="titre-vue">
+        <div>
+          <h1>Réglages</h1>
+          <p>Ce que le responsable technique configure une fois, avant le premier culte.</p>
+        </div>
+      </div>
+
+      <div class="grille g2">
+        <div class="carte">
+          <div class="etiq">voix</div>
+          <div class="reglage">
+            <div><div class="t">Mode de commande</div><div class="s">En mode rapide, la référence seule suffit et rien d'autre n'est à prononcer. En mode sécurisé, il faut « Apostle, donne-moi » devant, ce qui évite qu'une référence citée dans la prédication s'affiche toute seule.</div></div>
+            <select id="reg-forme">
+              <option value="libre" selected>Référence seule, rapide</option>
+              <option value="declencheur">Apostle + verbe, sécurisé</option>
+            </select>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Mode confirmation</div><div class="s">La référence est proposée en régie avant d'être projetée. Recommandé pour les premiers cultes.</div></div>
+            <button class="interrupteur" id="reg-confirm" aria-pressed="false" aria-label="Mode confirmation"></button>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Analyse du niveau sonore</div><div class="s">Ouvre un second accès au micro pour afficher le vumètre et détecter la fin des phrases. Beaucoup de postes n'acceptent qu'un seul accès au micro et c'est alors la reconnaissance qui s'arrête. À n'activer que si tout fonctionne bien.</div></div>
+            <button class="interrupteur" id="reg-niveau" aria-pressed="false" aria-label="Analyse du niveau sonore"></button>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Sensibilité de la détection</div><div class="s">Plus bas, l'application réagit aux voix faibles. Plus haut, elle ignore le bruit de la salle.</div></div>
+            <div class="curseur"><input type="range" id="reg-sensi" min="1.6" max="4" step="0.2" value="2.4"><span id="reg-sensi-val">2,4</span></div>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Mise en veille après</div><div class="s">Sur un long silence, la transcription s'arrête. Le détecteur local continue et réveille tout au premier mot.</div></div>
+            <select id="reg-veille">
+              <option value="30000">30 secondes</option>
+              <option value="90000" selected>1 minute 30</option>
+              <option value="300000">5 minutes</option>
+              <option value="0">jamais</option>
+            </select>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Exiger le mot déclencheur au clavier</div><div class="s">Désactivé, vous pouvez taper directement « romains 2 verset 3 » sans préfixe.</div></div>
+            <button class="interrupteur" id="reg-exiger" aria-pressed="false" aria-label="Exiger le déclencheur"></button>
+          </div>
+        </div>
+
+        <div class="carte">
+          <div class="etiq">salle et données</div>
+          <div class="reglage">
+            <div><div class="t">Distance du dernier rang</div><div class="s">La taille du texte projeté en découle automatiquement.</div></div>
+            <select id="reg-salle">
+              <option value="3.5">15 mètres</option>
+              <option value="4.7">20 mètres</option>
+              <option value="5.5" selected>25 mètres</option>
+              <option value="7.1">30 mètres</option>
+              <option value="9">40 mètres</option>
+            </select>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Conservation des commandes</div><div class="s">Aucun enregistrement audio n'est conservé, dans aucun cas.</div></div>
+            <select id="reg-conserve">
+              <option>Ne rien conserver</option>
+              <option selected>Références seules</option>
+              <option>Références et commandes, 30 jours</option>
+            </select>
+          </div>
+          <div class="reglage">
+            <div><div class="t">Fond animé</div><div class="s">Mouvement très lent des halos lumineux derrière le texte.</div></div>
+            <button class="interrupteur" id="reg-anim" aria-pressed="true" aria-label="Fond animé"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="carte" style="margin-top:16px">
+        <div class="etiq">raccourcis clavier</div>
+        <div class="grille g3" style="margin-top:10px">
+          <div class="sous"><kbd style="font-family:inherit;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 6px">M</kbd> activer ou couper le micro</div>
+          <div class="sous"><kbd style="font-family:inherit;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 6px">B</kbd> écran noir</div>
+          <div class="sous"><kbd style="font-family:inherit;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 6px">← →</kbd> pages du passage</div>
+          <div class="sous"><kbd style="font-family:inherit;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 6px">Entrée</kbd> valider une proposition</div>
+          <div class="sous"><kbd style="font-family:inherit;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 6px">Échap</kbd> annuler</div>
+          <div class="sous"><kbd style="font-family:inherit;background:var(--brume);border:1px solid var(--ligne);border-radius:4px;padding:1px 6px">F</kbd> plein écran</div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /zone -->
+
+  <!-- ---------- barre de commande ---------- -->
+  <div class="propositions" id="propositions" hidden></div>
+  <div class="barre">
+    <button class="micro-mini" id="micro-mini" aria-label="Micro">
+      <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3M9 21h6"/></svg>
+    </button>
+    <div class="champ">
+      <span class="prefixe"></span>
+      <input type="text" id="saisie" placeholder="Romains 2 verset 3" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="envoyer" id="envoyer">Projeter</button>
+    <div class="retour" id="retour" role="status" aria-live="polite"></div>
+  </div>
+
+</div><!-- /app -->
+
+<script src="scripts/data-books.js"></script>
+<script src="scripts/data-bible.js"></script>
+<script src="scripts/bible-lsg.js"></script>
+<script src="scripts/bible-kjv.js"></script>
+<script src="scripts/data-strong.js"></script>
+<script src="scripts/ecoute.js"></script>
+<script src="scripts/parser.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>
